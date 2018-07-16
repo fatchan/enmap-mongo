@@ -16,7 +16,7 @@ class EnmapProvider {
     this.dbName = options.dbName || 'enmap';
     this.port = options.port || 27017;
     this.host = options.host || 'localhost';
-
+    this.documentTTL = options.documentTTL || false;
     this.url = options.url || `mongodb://${this.auth}${this.host}:${this.port}/${this.dbName}`;
   }
 
@@ -29,6 +29,9 @@ class EnmapProvider {
     this.enmap = enmap;
     this.client = await MongoClient.connect(this.url);
     this.db = this.client.db(this.dbName).collection(this.name);
+    if (this.documentTTL) {
+      this.db.createIndex( { "expireAt": 1 }, { expireAfterSeconds: 0 } )
+    }
     if (this.fetchAll) {
       await this.fetchEverything();
       this.ready();
@@ -46,7 +49,7 @@ class EnmapProvider {
   }
 
   fetch(key) {
-    return this.db.get(key);
+    return this.db.findOne({_id:key});
   }
 
   async fetchEverything() {
@@ -68,6 +71,14 @@ class EnmapProvider {
       throw new Error('Keys should be strings or numbers.');
     }
     this.db.update({ _id: key }, { _id: key, value: val }, { upsert: true });
+  }
+
+  //i should probably combine these and just do an if!=null
+  setWithTTL(key, val, ttl) {
+    if (!key || !['String', 'Number'].includes(key.constructor.name)) {
+      throw new Error('Keys should be strings or numbers.');
+    }
+    this.db.update({ _id: key }, { _id: key, value: val, expireAt: ttl }, { upsert: true });
   }
 
   /**
