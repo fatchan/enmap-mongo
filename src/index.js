@@ -27,7 +27,7 @@ class EnmapProvider {
    */
   async init(enmap) {
     this.enmap = enmap;
-    this.client = await MongoClient.connect(this.url);
+    this.client = await MongoClient.connect(this.url, { useNewUrlParser: true });
     this.db = this.client.db(this.dbName).collection(this.name);
     if (this.documentTTL) {
       this.db.createIndex( { "expireAt": 1 }, { expireAfterSeconds: 0 } )
