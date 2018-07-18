@@ -1,5 +1,4 @@
 const { MongoClient } = require('mongodb');
-
 class EnmapProvider {
 
   constructor(options) {
@@ -11,11 +10,11 @@ class EnmapProvider {
     this.name = options.name;
 
     this.validateName();
-
     this.auth = options.user && options.password ? `${options.user}:${options.password}@` : '';
     this.dbName = options.dbName || 'enmap';
     this.port = options.port || 27017;
     this.host = options.host || 'localhost';
+    this.sc = options.sc || null;
     this.documentTTL = options.documentTTL || false;
     this.url = options.url || `mongodb://${this.auth}${this.host}:${this.port}/${this.dbName}`;
   }
@@ -27,7 +26,7 @@ class EnmapProvider {
    */
   async init(enmap) {
     this.enmap = enmap;
-    this.client = await MongoClient.connect(this.url, { useNewUrlParser: true });
+    this.client = this.sc || await MongoClient.connect(this.url, { useNewUrlParser: true })
     this.db = this.client.db(this.dbName).collection(this.name);
     if (this.documentTTL) {
       this.db.createIndex( { "expireAt": 1 }, { expireAfterSeconds: 0 } )
