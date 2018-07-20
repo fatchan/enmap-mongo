@@ -1,4 +1,5 @@
 const { MongoClient } = require('mongodb');
+const util = require('util')
 class EnmapProvider {
 
   constructor(options) {
@@ -16,6 +17,7 @@ class EnmapProvider {
     this.host = options.host || 'localhost';
     this.sc = options.sc || null;
     this.documentTTL = options.documentTTL || false;
+    this.monitorChanges = options.monitorChanges || false;
     this.url = options.url || `mongodb://${this.auth}${this.host}:${this.port}/${this.dbName}`;
   }
 
@@ -37,6 +39,17 @@ class EnmapProvider {
     } else {
       this.ready();
     }
+    if (this.monitorChanges === true) {
+      const changeStream = this.db.watch({fullDocument: 'updateLookup'});
+      changeStream.on("change", function(change) {
+        //console.log(change.operationType+' => '+util.inspect(change.fullDocument || change.documentKey));
+        if (change.operationType === 'insert') {
+          Map.prototype.set.call(enmap, change.fullDocument._id, change.fullDocument.value);
+        } else if (change.operationType === 'delete') {
+          Map.prototype.delete.call(enmap, change.documentKey._id);
+        }
+      });
+    }
     return this.defer;
   }
 
@@ -54,7 +67,7 @@ class EnmapProvider {
   async fetchEverything() {
     const rows = await this.db.find({}).toArray();
     for (const row of rows) {
-      this.enmap.set(row._id, row.value);
+      Map.prototype.set.call(this.enmap, row._id, row.value);
     }
   }
 
@@ -65,19 +78,15 @@ class EnmapProvider {
    * @param {*} val Required. The value of the element to add to the EnMap object.
    * If the EnMap is persistent this value MUST be stringifiable as JSON.
    */
-  set(key, val) {
+  set(key, val, ttl) {
     if (!key || !['String', 'Number'].includes(key.constructor.name)) {
       throw new Error('Keys should be strings or numbers.');
     }
-    this.db.update({ _id: key }, { _id: key, value: val }, { upsert: true });
-  }
-
-  //i should probably combine these and just do an if!=null
-  setWithTTL(key, val, ttl) {
-    if (!key || !['String', 'Number'].includes(key.constructor.name)) {
-      throw new Error('Keys should be strings or numbers.');
+    if (ttl) {
+      this.db.update({ _id: key }, { _id: key, value: val, expireAt: ttl }, { upsert: true });
+    } else {
+      this.db.update({ _id: key }, { _id: key, value: val }, { upsert: true });
     }
-    this.db.update({ _id: key }, { _id: key, value: val, expireAt: ttl }, { upsert: true });
   }
 
   /**
