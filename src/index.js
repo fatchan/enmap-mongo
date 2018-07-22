@@ -41,9 +41,9 @@ class EnmapProvider {
     }
     if (this.monitorChanges === true) {
       const changeStream = this.db.watch({fullDocument: 'updateLookup'});
-      changeStream.on("change", function(change) {
-        //console.log(change.operationType+' => '+util.inspect(change.fullDocument || change.documentKey));
-        if (change.operationType === 'insert') {
+      changeStream.on("change", (change) => {
+        console.log(this.name+'-'+change.operationType+' => '+change.documentKey._id);
+        if (change.operationType === 'insert' || change.operationType === 'update' | change.operationType === 'replace') {
           Map.prototype.set.call(enmap, change.fullDocument._id, change.fullDocument.value);
         } else if (change.operationType === 'delete') {
           Map.prototype.delete.call(enmap, change.documentKey._id);
