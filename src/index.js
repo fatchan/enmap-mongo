@@ -40,10 +40,12 @@ class EnmapProvider {
       this.ready();
     }
     if (this.monitorChanges === true) {
-      const changeStream = this.db.watch({fullDocument: 'updateLookup'});
+      const changeStream = this.db.watch();
       changeStream.on("change", (change) => {
-        console.log(this.name+'-'+change.operationType+' => '+change.documentKey._id);
-        if (change.operationType === 'insert' || change.operationType === 'update' | change.operationType === 'replace') {
+		/*
+		 * Ignore 'update' events because enmap always replaces _and_ we would have to do a {fullDocument: 'updateLookup'} change stream which we dont want.
+		 */
+        if (change.operationType === 'insert' || change.operationType === 'replace') {
           Map.prototype.set.call(enmap, change.fullDocument._id, change.fullDocument.value);
         } else if (change.operationType === 'delete') {
           Map.prototype.delete.call(enmap, change.documentKey._id);
@@ -79,9 +81,9 @@ class EnmapProvider {
    * If the EnMap is persistent this value MUST be stringifiable as JSON.
    */
   set(key, val, ttl) {
-    if (!key || !['String', 'Number'].includes(key.constructor.name)) {
+/*    if (!key || !['String', 'Number'].includes(key.constructor.name)) {
       throw new Error('Keys should be strings or numbers.');
-    }
+    }*/
     if (ttl) {
       this.db.update({ _id: key }, { _id: key, value: val, expireAt: ttl }, { upsert: true });
     } else {
