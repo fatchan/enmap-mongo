@@ -81,9 +81,9 @@ class EnmapProvider {
    * If the EnMap is persistent this value MUST be stringifiable as JSON.
    */
   set(key, val, ttl) {
-/*    if (!key || !['String', 'Number'].includes(key.constructor.name)) {
+    if (!key || !['String', 'Number'].includes(key.constructor.name)) {
       throw new Error('Keys should be strings or numbers.');
-    }*/
+    }
     if (ttl) {
       this.db.update({ _id: key }, { _id: key, value: val, expireAt: ttl }, { upsert: true });
     } else {
