@@ -1,5 +1,4 @@
 const { MongoClient } = require('mongodb');
-const util = require('util')
 class EnmapProvider {
 
   constructor(options) {
