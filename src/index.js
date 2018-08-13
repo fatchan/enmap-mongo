@@ -109,7 +109,7 @@ class EnmapProvider {
    * @return {Promise<*>} Promise returned by the database after deletion
    */
   bulkDelete() {
-    return this.db.drop();
+    return this.db.remove({});
   }
 
   /**
