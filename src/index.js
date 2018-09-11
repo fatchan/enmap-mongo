@@ -41,11 +41,16 @@ class EnmapProvider {
     if (this.monitorChanges === true) {
       const changeStream = this.db.watch();
       changeStream.on("change", (change) => {
-		/*
-		 * Ignore 'update' events because enmap always replaces _and_ we would have to do a {fullDocument: 'updateLookup'} change stream which we dont want.
-		 */
+//console.log(JSON.stringify(change, null, 2));
         if (change.operationType === 'insert' || change.operationType === 'replace') {
           Map.prototype.set.call(enmap, change.fullDocument._id, change.fullDocument.value);
+        } else if (change.operationType === 'update' && change.updateDescription.updatedFields) {
+		  const current = Map.prototype.get.call(enmap, change.documentKey._id);
+          for (let key in change.updateDescription.updatedFields) {
+            const splitKey = key.split('.'); //no support for nested changes
+            current[splitKey[1]] = change.updateDescription.updatedFields[key];
+          }
+		  Map.prototype.set.call(enmap, change.documentKey._id, current);
         } else if (change.operationType === 'delete') {
           Map.prototype.delete.call(enmap, change.documentKey._id);
         }
@@ -84,9 +89,9 @@ class EnmapProvider {
       throw new Error('Keys should be strings or numbers.');
     }
     if (ttl) {
-      this.db.update({ _id: key }, { _id: key, value: val, expireAt: ttl }, { upsert: true });
+      this.db.replaceOne({ _id: key }, { _id: key, value: val, expireAt: ttl }, { upsert: true });
     } else {
-      this.db.update({ _id: key }, { _id: key, value: val }, { upsert: true });
+      this.db.replaceOne({ _id: key }, { _id: key, value: val }, { upsert: true });
     }
   }
 
