@@ -45,9 +45,6 @@ class EnmapProvider {
 					Map.prototype.set.call(enmap, change.fullDocument._id, change.fullDocument.value);
 				} else if (change.operationType === 'update' && change.updateDescription.updatedFields) {
 					const current = Map.prototype.get.call(enmap, change.documentKey._id);
-					if (!current) {
-						return;
-					}
 					for (let key in change.updateDescription.updatedFields) {
 						const splitKey = key.split('.'); //no support for nested changes
 						current[splitKey[1]] = change.updateDescription.updatedFields[key];
