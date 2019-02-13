@@ -34,9 +34,6 @@ class EnmapProvider {
 		}
 		if (this.fetchAll) {
 			await this.fetchEverything();
-			this.ready();
-		} else {
-			this.ready();
 		}
 		if (this.monitorChanges === true) {
 			const changeStream = this.db.watch();
@@ -55,6 +52,7 @@ class EnmapProvider {
 				}
 			});
 		}
+		this.ready();
 		return this.defer;
 	}
 
